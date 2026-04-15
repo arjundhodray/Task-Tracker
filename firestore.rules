@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Document ID: userId
+    // Fields: uid, email, displayName, photoURL, createdAt, currentStreak, longestStreak, lastCompletedDate
+    
+    // Collection: tasks
+    // Document ID: taskId
+    // Fields: id, userId, title, description, createdAt, active
+    
+    // Collection: completions
+    // Document ID: completionId
+    // Fields: id, userId, taskId, date, completed
+    
+    // Collection: dailyStats
+    // Document ID: statId
+    // Fields: userId, date, completedCount, totalCount, percentage
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+             data.uid is string &&
+             data.email is string;
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['userId', 'title', 'active']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
+             data.active is bool &&
+             (!('startTime' in data) || data.startTime is string);
+    }
+
+    function isValidCompletion(data) {
+      return data.keys().hasAll(['userId', 'taskId', 'date', 'completed']) &&
+             data.userId == request.auth.uid &&
+             data.taskId is string &&
+             data.date is string && data.date.matches("^\\d{4}-\\d{2}-\\d{2}$") &&
+             data.completed is bool;
+    }
+
+    function isValidDailyStat(data) {
+      return data.keys().hasAll(['userId', 'date', 'completedCount', 'totalCount', 'percentage']) &&
+             data.userId == request.auth.uid &&
+             data.date is string &&
+             data.completedCount is number &&
+             data.totalCount is number &&
+             data.percentage is number;
+    }
+
+    function isValidAlarm(data) {
+      return data.keys().hasAll(['userId', 'time', 'label', 'ringtone', 'enabled']) &&
+             data.userId == request.auth.uid &&
+             data.time is string &&
+             data.label is string && data.label.size() <= 100 &&
+             data.ringtone is string &&
+             data.enabled is bool &&
+             (!('taskId' in data) || data.taskId is string);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+
+    match /alarms/{alarmId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidAlarm(request.resource.data);
+      allow update: if isAuthenticated() && isDocOwner() && isValidAlarm(request.resource.data);
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidTask(request.resource.data);
+      allow update: if isAuthenticated() && isDocOwner() && isValidTask(request.resource.data);
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+
+    match /completions/{completionId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidCompletion(request.resource.data);
+      allow update: if isAuthenticated() && isDocOwner() && isValidCompletion(request.resource.data);
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+
+    match /dailyStats/{statId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidDailyStat(request.resource.data);
+      allow update: if isAuthenticated() && isDocOwner() && isValidDailyStat(request.resource.data);
+    }
+  }
+}

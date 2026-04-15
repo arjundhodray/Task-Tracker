@@ -1,0 +1,97 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and streak information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "currentStreak": { "type": "number" },
+        "longestStreak": { "type": "number" },
+        "lastCompletedDate": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A daily task to be tracked",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "active": { "type": "boolean" },
+        "startTime": { "type": "string", "description": "Optional starting time for the task" }
+      },
+      "required": ["userId", "title", "active"]
+    },
+    "Completion": {
+      "title": "Completion",
+      "description": "Record of a task completion on a specific date",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "taskId": { "type": "string" },
+        "date": { "type": "string", "description": "YYYY-MM-DD format" },
+        "completed": { "type": "boolean" }
+      },
+      "required": ["userId", "taskId", "date", "completed"]
+    },
+    "DailyStats": {
+      "title": "DailyStats",
+      "description": "Aggregated stats for a day",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string" },
+        "completedCount": { "type": "number" },
+        "totalCount": { "type": "number" },
+        "percentage": { "type": "number" }
+      },
+      "required": ["userId", "date", "completedCount", "totalCount", "percentage"]
+    },
+    "Alarm": {
+      "title": "Alarm",
+      "description": "An alarm set by a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user who owns the alarm" },
+        "time": { "type": "string", "description": "The time of the alarm" },
+        "label": { "type": "string", "description": "The label of the alarm" },
+        "ringtone": { "type": "string", "description": "The ringtone of the alarm" },
+        "enabled": { "type": "boolean", "description": "Whether the alarm is enabled" },
+        "taskId": { "type": "string", "description": "Optional task ID associated with the alarm" }
+      },
+      "required": ["userId", "time", "label", "ringtone", "enabled"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "User tasks"
+    },
+    "/completions/{completionId}": {
+      "schema": "Completion",
+      "description": "Task completion records"
+    },
+    "/dailyStats/{statId}": {
+      "schema": "DailyStats",
+      "description": "Aggregated daily performance"
+    },
+    "/alarms/{alarmId}": {
+      "schema": "Alarm",
+      "description": "Alarms"
+    }
+  }
+}
